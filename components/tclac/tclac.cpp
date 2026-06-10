@@ -556,7 +556,7 @@ void tclacClimate::sendData(uint8_t * message, uint8_t size) {
 }
 
 // Преобразование байта в читабельный формат
-String tclacClimate::getHex(uint8_t *message, uint8_t size) {
+std::string tclacClimate::getHex(uint8_t *message, uint8_t size) {
 	String raw;
 	for (int i = 0; i < size; i++) {
 		raw += "\n" + String(message[i]);
