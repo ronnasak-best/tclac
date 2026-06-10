@@ -126,7 +126,7 @@ class tclacClimate : public climate::Climate, public esphome::uart::UARTDevice, 
 		void set_tx_led_pin(GPIOPin *tx_led_pin);
 		void sendData(uint8_t * message, uint8_t size);
 		void set_module_display_state(bool d_state);
-		static String getHex(uint8_t *message, uint8_t size);
+		static std::string getHex(uint8_t *message, uint8_t size);
 		static uint8_t getChecksum(const uint8_t * message, size_t size);
 		void set_vertical_airflow(AirflowVerticalDirection v_airflow);
 		void set_horizontal_airflow(AirflowHorizontalDirection h_airflow);
