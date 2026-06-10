@@ -557,12 +557,13 @@ void tclacClimate::sendData(uint8_t * message, uint8_t size) {
 
 // Преобразование байта в читабельный формат
 std::string tclacClimate::getHex(uint8_t *message, uint8_t size) {
-	String raw;
-	for (int i = 0; i < size; i++) {
-		raw += "\n" + String(message[i]);
-	}
-	raw.toUpperCase();
-	return raw;
+        std::string raw;
+        char buf[8];
+        for (int i = 0; i < size; i++) {
+                snprintf(buf, sizeof(buf), "\n%02X", message[i]);
+                raw += buf;
+        }
+        return raw;
 }
 
 // Вычисление контрольной суммы
