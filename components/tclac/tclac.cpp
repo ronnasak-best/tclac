@@ -88,14 +88,15 @@ void tclacClimate::loop()  {
 		// Из первых 5 байт нам нужен пятый- он содержит длину сообщения
 		esphome::uart::UARTDevice::read_array(dataRX+5, dataRX[4]+1);
 
-		uint8_t check = getChecksum(dataRX, sizeof(dataRX));
+		// uint8_t check = getChecksum(dataRX, sizeof(dataRX));
+		uint8_t check = getChecksum(dataRX, 65);
 
 		//raw = getHex(dataRX, sizeof(dataRX));
 		
 		//ESP_LOGD("TCL", "RX full : %s ", raw.c_str());
 		
 		// Проверяем контрольную сумму
-		if (check != dataRX[60]) {
+		if (check != dataRX[64]) {
 			ESP_LOGD("TCL", "Invalid checksum %x", check);
 			this->dataShow(0,0);
 			return;
