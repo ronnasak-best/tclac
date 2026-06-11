@@ -342,7 +342,6 @@ def to_code(config):
     if CONF_POWER_SENSOR in config:
         power_sensor = yield sensor.new_sensor(config[CONF_POWER_SENSOR])
         cg.add(var.set_power_sensor(power_sensor))
-        yield sensor.setup_sensor(power_sensor, var)
 
     if CONF_TX_LED in config:
         cg.add_define("CONF_TX_LED")
