@@ -12,6 +12,7 @@
 #include "esphome/core/defines.h"
 #include "esphome/components/uart/uart.h"
 #include "esphome/components/climate/climate.h"
+#include "esphome/components/sensor/sensor.h"
 
 namespace esphome {
 namespace tclac {
@@ -95,7 +96,7 @@ class tclacClimate : public climate::Climate, public esphome::uart::UARTDevice, 
 		// Ожидаемая длина текущего UART-пакета
 		size_t rx_expected_size_ = 0;
 		// Команда запроса состояния
-		uint8_t poll[8] = {0xBB,0x00,0x01,0x03,0x02,0x01,0x00,0xBE};
+		uint8_t poll[8] = {0xBB,0x00,0x01,0x03,0x02,0x01,0x00,0xBA};
 		// Инициализация и начальное наполнение переменных состоянй переключателей
 		bool beeper_status_;
 		bool display_status_;
@@ -108,6 +109,7 @@ class tclacClimate : public climate::Climate, public esphome::uart::UARTDevice, 
 		int target_temperature_set = 0;
 		uint8_t switch_climate_mode = 0;
 		bool allow_take_control = false;
+		sensor::Sensor *power_sensor_ = nullptr;
 		
 		esphome::climate::ClimateTraits traits_;
 		
@@ -130,6 +132,7 @@ class tclacClimate : public climate::Climate, public esphome::uart::UARTDevice, 
 		void set_tx_led_pin(GPIOPin *tx_led_pin);
 		void sendData(uint8_t * message, uint8_t size);
 		void set_module_display_state(bool d_state);
+		void set_power_sensor(sensor::Sensor *power_sensor);
 		static std::string getHex(uint8_t *message, uint8_t size);
 		static uint8_t getChecksum(const uint8_t * message, size_t size);
 		void set_vertical_airflow(AirflowVerticalDirection v_airflow);

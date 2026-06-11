@@ -229,8 +229,11 @@ void tclacClimate::readData() {
 	float estimated_watt = freq * 10.0;
 	ESP_LOGI("TCL_POWER", "B38=%d B39=%d freq=%.0f estimated=%.0fW", 
 	    dataRX[38], dataRX[39], freq, estimated_watt);
+	if (this->power_sensor_ != nullptr) {
+		this->power_sensor_->publish_state(estimated_watt);
+	}
 	allow_take_control = true;
-   }
+}
 
 // Climate control
 void tclacClimate::control(const climate::ClimateCall &call) {
@@ -658,6 +661,11 @@ void tclacClimate::set_tx_led_pin(GPIOPin *tx_led_pin) {
 void tclacClimate::set_module_display_state(bool d_state) {
 	this->module_display_status_ = d_state;
 }
+
+void tclacClimate::set_power_sensor(sensor::Sensor *power_sensor) {
+	this->power_sensor_ = power_sensor;
+}
+
 // Получение режима фиксации вертикальной заслонки
 void tclacClimate::set_vertical_airflow(AirflowVerticalDirection v_airflow) {
 	this->vertical_direction_ = v_airflow;

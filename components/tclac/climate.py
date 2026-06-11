@@ -1,7 +1,7 @@
 ﻿from esphome import automation, pins
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import climate, uart
+from esphome.components import climate, sensor, uart
 from esphome.const import (
     CONF_ID,
     CONF_LEVEL,
@@ -15,6 +15,8 @@ from esphome.const import (
     CONF_TARGET_TEMPERATURE,
     CONF_SUPPORTED_FAN_MODES,
     CONF_SUPPORTED_SWING_MODES,
+    UNIT_WATT,
+    DEVICE_CLASS_POWER,
 )
 
 from esphome.components.climate import (
@@ -24,9 +26,9 @@ from esphome.components.climate import (
     CONF_CURRENT_TEMPERATURE,
 )
 
-AUTO_LOAD = ["climate"]
+AUTO_LOAD = ["climate", "sensor"]
 CODEOWNERS = ["@I-am-nightingale", "@xaxexa", "@junkfix"]
-DEPENDENCIES = ["climate", "uart"]
+DEPENDENCIES = ["climate", "uart", "sensor"]
 
 TCLAC_MIN_TEMPERATURE = 16.0
 TCLAC_MAX_TEMPERATURE = 31.0
@@ -39,6 +41,7 @@ CONF_DISPLAY = "show_display"
 CONF_FORCE_MODE = "force_mode"
 CONF_VERTICAL_AIRFLOW = "vertical_airflow"
 CONF_MODULE_DISPLAY = "show_module_display"
+CONF_POWER_SENSOR = "power_sensor"
 CONF_HORIZONTAL_AIRFLOW = "horizontal_airflow"
 CONF_VERTICAL_SWING_MODE = "vertical_swing_mode"
 CONF_HORIZONTAL_SWING_MODE = "horizontal_swing_mode"
@@ -160,6 +163,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_SUPPORTED_SWING_MODES,default=["OFF","VERTICAL","HORIZONTAL","BOTH",],): cv.ensure_list(cv.enum(SUPPORTED_SWING_MODES_OPTIONS, upper=True)),
             cv.Optional(CONF_SUPPORTED_MODES,default=["OFF","AUTO","COOL","HEAT","DRY","FAN_ONLY",],): cv.ensure_list(cv.enum(SUPPORTED_CLIMATE_MODES_OPTIONS, upper=True)),
             cv.Optional(CONF_SUPPORTED_FAN_MODES,default=["AUTO","QUIET","LOW","MIDDLE","MEDIUM","HIGH","FOCUS","DIFFUSE",],): cv.ensure_list(cv.enum(SUPPORTED_FAN_MODES_OPTIONS, upper=True)),
+            cv.Optional(CONF_POWER_SENSOR): sensor.sensor_schema(UNIT_WATT, DEVICE_CLASS_POWER, "mdi:flash"),
         }
     )
     .extend(uart.UART_DEVICE_SCHEMA)
@@ -313,7 +317,7 @@ async def tclac_set_horizontal_swing_direction_to_code(config, action_id, templa
 
 
 # Добавление конфигурации в код
-def to_code(config):
+async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     yield cg.register_component(var, config)
     yield uart.register_uart_device(var, config)
@@ -335,6 +339,10 @@ def to_code(config):
         cg.add(var.set_supported_fan_modes(config[CONF_SUPPORTED_FAN_MODES]))
     if CONF_SUPPORTED_SWING_MODES in config:
         cg.add(var.set_supported_swing_modes(config[CONF_SUPPORTED_SWING_MODES]))
+    if CONF_POWER_SENSOR in config:
+        power_sensor = await sensor.new_sensor(config[CONF_POWER_SENSOR])
+        cg.add(var.set_power_sensor(power_sensor))
+        await sensor.setup_sensor(power_sensor, var)
 
     if CONF_TX_LED in config:
         cg.add_define("CONF_TX_LED")
