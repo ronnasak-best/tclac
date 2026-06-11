@@ -222,6 +222,11 @@ void tclacClimate::readData() {
 	}
 	// Публикуем данные
 	this->publish_state();
+	// เพิ่มตรงนี้
+	float freq = dataRX[38];
+	float estimated_watt = freq * 10.0;
+	ESP_LOGI("TCL_POWER", "B38=%d B39=%d freq=%.0f estimated=%.0fW", 
+	    dataRX[38], dataRX[39], freq, estimated_watt);
 	allow_take_control = true;
    }
 
