@@ -62,10 +62,11 @@ void tclacClimate::setup() {
 void tclacClimate::loop()  {
 	while (esphome::uart::UARTDevice::available() > 0) {
 		uint8_t byte = esphome::uart::UARTDevice::read();
+		ESP_LOGD("TCL", "UART RX byte %02X pos=%zu exp=%zu", byte, this->rx_buffer_pos_, this->rx_expected_size_);
 
 		if (this->rx_buffer_pos_ == 0) {
 			if (byte != 0xBB) {
-				ESP_LOGD("TCL", "Wrong byte");
+				ESP_LOGD("TCL", "Wrong packet header byte=%02X", byte);
 				continue;
 			}
 			this->dataRX[this->rx_buffer_pos_++] = byte;
@@ -76,7 +77,8 @@ void tclacClimate::loop()  {
 
 		if (this->rx_buffer_pos_ == 5) {
 			this->rx_expected_size_ = (size_t)this->dataRX[4] + 6;
-			if (this->rx_expected_size_ > sizeof(this->dataRX)) {
+			ESP_LOGD("TCL", "Header parsed length=%02X expected_size=%zu", this->dataRX[4], this->rx_expected_size_);
+			if (this->rx_expected_size_ > sizeof(this->dataRX) || this->rx_expected_size_ < 6) {
 				ESP_LOGD("TCL", "Invalid packet size %zu", this->rx_expected_size_);
 				this->rx_buffer_pos_ = 0;
 				this->rx_expected_size_ = 0;
@@ -101,8 +103,15 @@ void tclacClimate::loop()  {
 				continue;
 			}
 
+			ESP_LOGD("TCL", "Packet complete size=%zu checksum OK", packet_size);
 			this->dataShow(0,0);
 			this->readData();
+			this->rx_buffer_pos_ = 0;
+			this->rx_expected_size_ = 0;
+		}
+
+		if (this->rx_buffer_pos_ >= sizeof(this->dataRX)) {
+			ESP_LOGD("TCL", "RX overflow reset pos=%zu", this->rx_buffer_pos_);
 			this->rx_buffer_pos_ = 0;
 			this->rx_expected_size_ = 0;
 		}
