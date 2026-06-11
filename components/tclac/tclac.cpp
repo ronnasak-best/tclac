@@ -222,8 +222,6 @@ void tclacClimate::readData() {
 	}
 	// Публикуем данные
 	this->publish_state();
-	id(compressor_freq).publish_state(dataRX[38]);
-id(compressor_freq2).publish_state(dataRX[39]);
 	allow_take_control = true;
    }
 
