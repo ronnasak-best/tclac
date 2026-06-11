@@ -234,14 +234,28 @@ void tclacClimate::readData() {
 	);
 
 	float hz = dataRX[38];
+	float estimated_watt = 0.0f;
 
-	// clamp
-	if (hz < 15.0f) hz = 15.0f;
-	if (hz > 100.0f) hz = 100.0f;
+	// AC OFF = 0W
+	if (this->mode == climate::CLIMATE_MODE_OFF || hz == 0.0f) {
+		estimated_watt = 0.0f;
+	} else {
+		// clamp frequency
+		if (hz < 15.0f) hz = 15.0f;
+		if (hz > 100.0f) hz = 100.0f;
 
-	// map inverter freq -> power
-	float estimated_watt =
-		120.0f + ((hz - 15.0f) * (1350.0f - 120.0f) / (100.0f - 15.0f));
+		// inverter power curve
+		estimated_watt =
+			120.0f + ((hz - 15.0f) * (1350.0f - 120.0f) / (100.0f - 15.0f));
+	}
+
+	ESP_LOGI("TCL_POWER",
+		"B38=%d B39=%d mode=%d estimated=%.0fW",
+		dataRX[38],
+		dataRX[39],
+		(int)this->mode,
+		estimated_watt
+	);
 
 	if (this->power_sensor_ != nullptr) {
 		this->power_sensor_->publish_state(estimated_watt);
