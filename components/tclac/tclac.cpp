@@ -60,59 +60,52 @@ void tclacClimate::setup() {
 }
 
 void tclacClimate::loop()  {
-	// Если в буфере UART что-то есть, то читаем это что-то
-	if (esphome::uart::UARTDevice::available() > 0) {
-		dataShow(0, true);
-		dataRX[0] = esphome::uart::UARTDevice::read();
-		// Если принятый байт- не заголовок (0xBB), то просто покидаем цикл
-		if (dataRX[0] != 0xBB) {
-			ESP_LOGD("TCL", "Wrong byte");
-			dataShow(0,0);
-			return;
+	while (esphome::uart::UARTDevice::available() > 0) {
+		uint8_t byte = esphome::uart::UARTDevice::read();
+
+		if (this->rx_buffer_pos_ == 0) {
+			if (byte != 0xBB) {
+				ESP_LOGD("TCL", "Wrong byte");
+				continue;
+			}
+			this->dataRX[this->rx_buffer_pos_++] = byte;
+			continue;
 		}
-		// А вот если совпал заголовок (0xBB), то начинаем чтение по цепочке еще 4 байт
-		// Иногда, для некоторых кондиционеров все же нужно добавить delay(5) между пакетами. Зачем- ХЗ, но так надо. Но не всегда. Хотя иногда- да. Но не каждый раз. Изредка. Случается.
-		// delay(5);
-		dataRX[1] = esphome::uart::UARTDevice::read();
-		// delay(5);
-		dataRX[2] = esphome::uart::UARTDevice::read();
-		// delay(5);
-		dataRX[3] = esphome::uart::UARTDevice::read();
-		// delay(5);
-		dataRX[4] = esphome::uart::UARTDevice::read();
 
-		//auto raw = getHex(dataRX, 5);
-		
-		//ESP_LOGD("TCL", "first 5 byte : %s ", raw.c_str());
+		this->dataRX[this->rx_buffer_pos_++] = byte;
 
-		// Из первых 5 байт нам нужен пятый- он содержит длину сообщения
-		esphome::uart::UARTDevice::read_array(dataRX+5, dataRX[4]+1);
+		if (this->rx_buffer_pos_ == 5) {
+			this->rx_expected_size_ = (size_t)this->dataRX[4] + 6;
+			if (this->rx_expected_size_ > sizeof(this->dataRX)) {
+				ESP_LOGD("TCL", "Invalid packet size %zu", this->rx_expected_size_);
+				this->rx_buffer_pos_ = 0;
+				this->rx_expected_size_ = 0;
+				continue;
+			}
+		}
 
-			// Debug: log bytes ที่น่าสนใจ
-		ESP_LOGD("TCL_RAW", "B18=%02X B29=%02X B30=%02X B34=%02X B35=%02X B36=%02X B37=%02X B38=%02X B39=%02X B40=%02X B44=%02X",
-	    dataRX[18], dataRX[29], dataRX[30],
-	    dataRX[34], dataRX[35], dataRX[36],
-	    dataRX[37], dataRX[38], dataRX[39],
-	    dataRX[40], dataRX[44]);
+		if (this->rx_expected_size_ > 0 && this->rx_buffer_pos_ == this->rx_expected_size_) {
+			ESP_LOGD("TCL_RAW", "B18=%02X B29=%02X B30=%02X B34=%02X B35=%02X B36=%02X B37=%02X B38=%02X B39=%02X B40=%02X B44=%02X",
+				dataRX[18], dataRX[29], dataRX[30],
+				dataRX[34], dataRX[35], dataRX[36],
+				dataRX[37], dataRX[38], dataRX[39],
+				dataRX[40], dataRX[44]);
 
-		// uint8_t check = getChecksum(dataRX, sizeof(dataRX));
-		uint8_t check = getChecksum(dataRX, 65);
+			size_t packet_size = this->rx_expected_size_;
+			uint8_t check = getChecksum(dataRX, packet_size);
+			if (check != dataRX[packet_size - 1]) {
+				ESP_LOGD("TCL", "Invalid checksum %02X expected %02X", check, dataRX[packet_size - 1]);
+				this->dataShow(0,0);
+				this->rx_buffer_pos_ = 0;
+				this->rx_expected_size_ = 0;
+				continue;
+			}
 
-		//raw = getHex(dataRX, sizeof(dataRX));
-		
-		//ESP_LOGD("TCL", "RX full : %s ", raw.c_str());
-		
-		// Проверяем контрольную сумму
-		if (check != dataRX[64]) {
-			ESP_LOGD("TCL", "Invalid checksum %x", check);
 			this->dataShow(0,0);
-			return;
-		} else {
-			//ESP_LOGD("TCL", "checksum OK %x", check);
+			this->readData();
+			this->rx_buffer_pos_ = 0;
+			this->rx_expected_size_ = 0;
 		}
-		this->dataShow(0,0);
-		// Прочитав все из буфера приступаем к разбору данных
-		this->readData();
 	}
 }
 

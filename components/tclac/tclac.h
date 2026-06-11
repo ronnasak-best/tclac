@@ -90,6 +90,10 @@ class tclacClimate : public climate::Climate, public esphome::uart::UARTDevice, 
 		uint8_t dataTX[38];
 		// А dataRX по прежнему из 61 байта
 		uint8_t dataRX[65];
+		// Счетчик байтов, считанных из UART-пакета
+		size_t rx_buffer_pos_ = 0;
+		// Ожидаемая длина текущего UART-пакета
+		size_t rx_expected_size_ = 0;
 		// Команда запроса состояния
 		uint8_t poll[8] = {0xBB,0x00,0x01,0x03,0x02,0x01,0x00,0xBE};
 		// Инициализация и начальное наполнение переменных состоянй переключателей
