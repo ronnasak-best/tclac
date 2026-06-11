@@ -215,6 +215,12 @@ void tclacClimate::readData() {
 	}
 	// Публикуем данные
 	this->publish_state();
+	// Debug: log bytes ที่น่าสนใจ
+	ESP_LOGD("TCL_RAW", "B18=%02X B29=%02X B30=%02X B34=%02X B35=%02X B36=%02X B37=%02X B38=%02X B39=%02X B40=%02X B44=%02X",
+    dataRX[18], dataRX[29], dataRX[30],
+    dataRX[34], dataRX[35], dataRX[36],
+    dataRX[37], dataRX[38], dataRX[39],
+    dataRX[40], dataRX[44]);
 	allow_take_control = true;
    }
 
