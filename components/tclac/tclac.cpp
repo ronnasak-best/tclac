@@ -62,7 +62,7 @@ void tclacClimate::setup() {
 void tclacClimate::loop()  {
 	while (esphome::uart::UARTDevice::available() > 0) {
 		uint8_t byte = esphome::uart::UARTDevice::read();
-		ESP_LOGD("TCL", "UART RX byte %02X pos=%zu exp=%zu", byte, this->rx_buffer_pos_, this->rx_expected_size_);
+		// ESP_LOGD("TCL", "UART RX byte %02X pos=%zu exp=%zu", byte, this->rx_buffer_pos_, this->rx_expected_size_);
 
 		if (this->rx_buffer_pos_ == 0) {
 			if (byte != 0xBB) {
@@ -224,11 +224,25 @@ void tclacClimate::readData() {
 	}
 	// Публикуем данные
 	this->publish_state();
-	// เพิ่มตรงนี้
-	float freq = dataRX[38];
-	float estimated_watt = freq * 10.0;
-	ESP_LOGI("TCL_POWER", "B38=%d B39=%d freq=%.0f estimated=%.0fW", 
-	    dataRX[38], dataRX[39], freq, estimated_watt);
+	// เพิ่มตรงนี้ (improved power estimation)
+	ESP_LOGI("TCL_POWER",
+		"B38=%d B39=%d target=%.1f current=%.1f",
+		dataRX[38],
+		dataRX[39],
+		target_temperature,
+		current_temperature
+	);
+
+	float hz = dataRX[38];
+
+	// clamp
+	if (hz < 15.0f) hz = 15.0f;
+	if (hz > 100.0f) hz = 100.0f;
+
+	// map inverter freq -> power
+	float estimated_watt =
+		120.0f + ((hz - 15.0f) * (1350.0f - 120.0f) / (100.0f - 15.0f));
+
 	if (this->power_sensor_ != nullptr) {
 		this->power_sensor_->publish_state(estimated_watt);
 	}
